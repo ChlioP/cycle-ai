@@ -1,0 +1,11 @@
+{
+  "kind": "critique-panel",
+  "score": 4.6,
+  "axes": {
+    "clarity": {"score": 5, "notes": "Each page has one primary task and predictions are labeled as estimates."},
+    "hierarchy": {"score": 5, "notes": "The dashboard prioritizes the prediction range, then logging and pattern context."},
+    "typography": {"score": 4, "notes": "Fluid headings and compact supporting text remain readable across breakpoints."},
+    "motion": {"score": 4, "notes": "Feedback is restrained and reduced-motion preferences are respected."},
+    "brand": {"score": 5, "notes": "Blush and lavender distinguish logged data, predictions, and actions without weakening professionalism."}
+  }
+}

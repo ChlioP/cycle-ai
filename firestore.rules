@@ -1,0 +1,82 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedInAs(userId) {
+      return request.auth != null && request.auth.uid == userId;
+    }
+
+    function validPeriodLog(userId) {
+      return request.resource.data.keys().hasOnly([
+        'userId', 'startDate', 'endDate', 'flow', 'painLevel', 'notes', 'createdAt', 'updatedAt'
+      ])
+      && request.resource.data.userId == userId
+      && request.resource.data.startDate is string
+      && request.resource.data.endDate is string
+      && request.resource.data.flow in ['spotting', 'light', 'medium', 'heavy']
+      && request.resource.data.painLevel is number
+      && request.resource.data.painLevel >= 0
+      && request.resource.data.painLevel <= 5
+      && request.resource.data.notes is string;
+    }
+
+    function validSymptomLog(userId) {
+      return request.resource.data.keys().hasOnly([
+        'userId', 'date', 'symptoms', 'severity', 'mood', 'energy', 'sleepHours',
+        'stress', 'notes', 'createdAt', 'updatedAt'
+      ])
+      && request.resource.data.userId == userId
+      && request.resource.data.date is string
+      && request.resource.data.symptoms is list
+      && request.resource.data.symptoms.size() > 0
+      && request.resource.data.symptoms.size() <= 20
+      && request.resource.data.severity is number
+      && request.resource.data.severity >= 1
+      && request.resource.data.severity <= 5
+      && request.resource.data.mood is string
+      && request.resource.data.energy is string
+      && (request.resource.data.sleepHours == null || request.resource.data.sleepHours is number)
+      && request.resource.data.stress is string
+      && request.resource.data.notes is string;
+    }
+
+    match /users/{userId}/periodLogs/{logId} {
+      allow read, delete: if signedInAs(userId);
+      allow create: if signedInAs(userId)
+        && validPeriodLog(userId)
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.updatedAt == request.time;
+      allow update: if signedInAs(userId)
+        && validPeriodLog(userId)
+        && request.resource.data.createdAt == resource.data.createdAt
+        && request.resource.data.updatedAt == request.time;
+    }
+
+    match /users/{userId}/symptomLogs/{logId} {
+      allow read, delete: if signedInAs(userId);
+      allow create: if signedInAs(userId)
+        && validSymptomLog(userId)
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.updatedAt == request.time;
+      allow update: if signedInAs(userId)
+        && validSymptomLog(userId)
+        && request.resource.data.createdAt == resource.data.createdAt
+        && request.resource.data.updatedAt == request.time;
+    }
+
+    match /users/{userId}/assistantMessages/{messageId} {
+      allow read, delete: if signedInAs(userId);
+      allow create: if signedInAs(userId)
+        && request.resource.data.keys().hasOnly(['userId', 'role', 'text', 'createdAt'])
+        && request.resource.data.userId == userId
+        && request.resource.data.role in ['ai', 'user']
+        && request.resource.data.text is string
+        && request.resource.data.text.size() <= 5000
+        && request.resource.data.createdAt == request.time;
+      allow update: if false;
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
