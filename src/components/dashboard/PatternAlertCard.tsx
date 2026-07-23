@@ -13,7 +13,7 @@ import { cycleLengthsFromPeriods } from "@/lib/cycleCalculations";
 export function PatternAlertCard({ compact = false }: { compact?: boolean }) {
   const healthData = useHealthData();
   const calculatedLengths = cycleLengthsFromPeriods(healthData.periodLogs);
-  const lengths = calculatedLengths.length > 0 ? calculatedLengths : healthData.source === "mock" ? cycleLengths.map((cycle) => cycle.days) : [];
+  const lengths = calculatedLengths.length > 0 ? calculatedLengths : healthData.source === "demo" ? cycleLengths.map((cycle) => cycle.days) : [];
   const irregularity = detectIrregularPattern(lengths);
   const symptomPattern = detectPrePeriodSymptoms(healthData.symptomLogs, healthData.periodLogs)[0];
 

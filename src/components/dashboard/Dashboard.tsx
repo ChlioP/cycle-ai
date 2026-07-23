@@ -17,10 +17,11 @@ const quickLogs = [
 ] as const;
 
 export function Dashboard() {
-  const { loading, error } = useHealthData();
+  const { loading, error, source } = useHealthData();
   return <AppShell note="Your entries are private. Predictions are estimates, not a diagnosis.">
     <PageHead eyebrow="Sunday, June 28" title="Good morning, Ava" description="Here’s what your recent cycle data suggests today." action={{ href: "/log-symptoms", label: "+ Quick log", secondary: true }} />
     {error ? <p className="data-error" role="alert">Live data could not be refreshed. Please check your connection.</p> : null}
+    {source === "demo" ? <p className="preview-note"><strong>Sample preview:</strong> This context is not part of your saved history. Log your first period to start using your data.</p> : null}
     {loading ? <DashboardSkeleton /> : <>
     <div className="grid grid-2">
       <PredictionCard />

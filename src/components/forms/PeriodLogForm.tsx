@@ -6,23 +6,25 @@ import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
 import { SymptomChip } from "./SymptomChip";
 import { useLogSubmit } from "./useLogSubmit";
-import { createPeriodLog } from "@/lib/firebase/firestore";
 import { Toast } from "@/components/ui/Toast";
+import { useHealthData } from "@/components/providers/HealthDataProvider";
+import type { FlowLevel } from "@/lib/mockData";
 
 const flowOptions = ["Spotting", "Light", "Medium", "Heavy"];
 
 export function PeriodLogForm() {
   const [flow, setFlow] = useState("Medium");
   const [pain, setPain] = useState(3);
+  const [startDate, setStartDate] = useState("");
+  const { createPeriod } = useHealthData();
   const save = useLogSubmit("Period", async (form) => {
     const data = new FormData(form);
     const startDate = String(data.get("startDate") ?? "");
     const endDate = String(data.get("endDate") ?? "");
-    if (endDate && endDate < startDate) throw new Error("End date must follow start date.");
-    await createPeriodLog({
+    await createPeriod({
       startDate,
-      endDate,
-      flow: flow.toLowerCase(),
+      ...(endDate ? { endDate } : {}),
+      flow: flow.toLowerCase() as FlowLevel,
       painLevel: pain,
       notes: String(data.get("notes") ?? ""),
     });
@@ -31,8 +33,8 @@ export function PeriodLogForm() {
   return <>
     <form className="card form form-width" onSubmit={save.submit}>
       <div className="grid grid-2">
-        <div className="field"><label htmlFor="start">Start date</label><Input id="start" name="startDate" type="date" defaultValue="2026-06-28" required /></div>
-        <div className="field"><label htmlFor="end">End date <span className="muted">(optional)</span></label><Input id="end" name="endDate" type="date" /></div>
+        <div className="field"><label htmlFor="start">Start date</label><Input id="start" name="startDate" type="date" value={startDate} onChange={(event) => setStartDate(event.target.value)} required /></div>
+        <div className="field"><label htmlFor="end">End date <span className="muted">(optional)</span></label><Input id="end" name="endDate" type="date" min={startDate || undefined} /></div>
       </div>
       <div><p className="group-label">Flow level</p><div className="chips">{flowOptions.map((option) => <SymptomChip label={option} selected={flow === option} onToggle={() => setFlow(option)} key={option} />)}</div></div>
       <div className="field">

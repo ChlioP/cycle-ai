@@ -4,6 +4,7 @@ import {
   currentCycleDay,
   cycleLengthsFromPeriods,
   cycleVariation,
+  formatDateOnly,
   formatMonthDay,
   predictNextPeriod,
 } from "./cycleCalculations";
@@ -59,7 +60,7 @@ function prePeriodExplanation(periods: readonly PeriodLog[], symptoms: readonly 
   return `${insights.slice(0, 2).map((insight) => insight.wording).join(" ")} Repeated timing can be useful context, but it does not establish a medical cause.`;
 }
 
-export function generateAssistantReply(question: string, periods: readonly PeriodLog[], symptoms: readonly SymptomLog[], asOfDate = new Date().toISOString().slice(0, 10)) {
+export function generateAssistantReply(question: string, periods: readonly PeriodLog[], symptoms: readonly SymptomLog[], asOfDate = formatDateOnly(new Date())) {
   const normalized = question.toLowerCase();
   if (/confidence|prediction|predicted|range/.test(normalized)) return confidenceExplanation(periods, asOfDate);
   if (/irregular|variation|vary|varied/.test(normalized)) return irregularityExplanation(periods);

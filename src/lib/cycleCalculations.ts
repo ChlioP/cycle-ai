@@ -4,13 +4,20 @@ const DAY_MS = 86_400_000;
 
 function parseDate(value: string) {
   const [year, month, day] = value.split("-").map(Number);
-  return new Date(Date.UTC(year, month - 1, day));
+  return new Date(year, month - 1, day, 12);
 }
 
 function addDays(value: string, days: number) {
   const date = parseDate(value);
-  date.setUTCDate(date.getUTCDate() + days);
+  date.setDate(date.getDate() + days);
   return date;
+}
+
+export function formatDateOnly(date: Date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
 }
 
 export function daysBetween(start: string, end: string) {
@@ -24,7 +31,7 @@ export function averageCycleLength(lengths: readonly number[]) {
 
 export function averagePeriodDuration(logs: readonly PeriodLog[]) {
   if (logs.length === 0) return null;
-  const durations = logs.map((log) => daysBetween(log.startDate, log.endDate) + 1);
+  const durations = logs.map((log) => daysBetween(log.startDate, log.endDate || log.startDate) + 1);
   return durations.reduce((total, duration) => total + duration, 0) / durations.length;
 }
 
@@ -77,5 +84,5 @@ export function predictNextPeriod(lastPeriodStart: string, lengths: readonly num
 }
 
 export function formatMonthDay(date: Date) {
-  return new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", timeZone: "UTC" }).format(date);
+  return new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric" }).format(date);
 }

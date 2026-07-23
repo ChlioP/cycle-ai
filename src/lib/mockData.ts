@@ -3,7 +3,7 @@ export type FlowLevel = "spotting" | "light" | "medium" | "heavy";
 export type PeriodLog = {
   id: string;
   startDate: string;
-  endDate: string;
+  endDate?: string;
   flow: FlowLevel;
   painLevel: number;
   notes?: string;

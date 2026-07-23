@@ -10,7 +10,7 @@ export default function PrivacyPage() {
     <Card className="legal-copy">
       <p className="muted">Last updated: June 28, 2026</p>
       <h2>Information collected</h2>
-      <p>CycleCare stores period dates, flow and pain entries, symptom check-ins, optional notes, and assistant conversation history. Firebase Authentication assigns an anonymous user identifier so records can be separated by user.</p>
+      <p>CycleCare stores period dates, flow and pain entries, symptom check-ins, optional notes, and assistant conversation history. When Firebase is configured, anonymous authentication separates records by user. Otherwise, period records stay in this browser’s local storage.</p>
       <h2>How information is used</h2>
       <p>Entries are used only to provide the calendar, analytics, predictions, and assistant summaries shown in the application. This portfolio application does not sell health information or use it for advertising.</p>
       <h2>Storage and access</h2>

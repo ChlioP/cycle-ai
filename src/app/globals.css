@@ -165,6 +165,9 @@ h2 { font-size: 20px; letter-spacing: -.02em; }
 .skeleton { display: block; border-radius: 8px; background: linear-gradient(90deg, var(--surface-2) 25%, color-mix(in srgb, var(--lavender) 40%, var(--surface)) 50%, var(--surface-2) 75%); background-size: 200% 100%; animation: shimmer 1.4s infinite linear; }
 .skeleton-card { min-height: 170px; }
 .data-error { margin-bottom: 16px; padding: 12px 14px; border: 1px solid #d77b87; border-radius: 12px; background: color-mix(in srgb, #d77b87 12%, var(--surface)); color: var(--text); }
+.preview-note { margin-bottom: 16px; padding: 12px 14px; border: 1px solid var(--lavender); border-radius: 12px; background: var(--surface-2); color: var(--muted); }
+.history-actions { display: flex; gap: 8px; }
+.button.small { min-height: 36px; padding: 6px 10px; }
 .error-state { display: grid; gap: 14px; max-width: 680px; margin: 10vh auto 0; }
 .legal-footer { display: grid; gap: 10px; margin-top: 48px; padding-top: 20px; border-top: 1px solid var(--border); color: var(--muted); font-size: 12px; }
 .legal-footer p { max-width: 76ch; }

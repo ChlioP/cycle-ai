@@ -1,7 +1,17 @@
 "use client";
 
-import { createContext, useContext, useMemo } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { useFirestoreLogs } from "@/hooks/useFirestoreLogs";
+import { createPeriodLog, deletePeriodLog, updatePeriodLog } from "@/lib/firebase/firestore";
+import {
+  deleteLocalPeriodEntry,
+  readLocalPeriodEntries,
+  saveLocalPeriodEntry,
+  selectPeriodDisplayData,
+  updateLocalPeriodEntry,
+  validatePeriodEntry,
+  type PeriodEntryInput,
+} from "@/lib/periodRepository";
 import {
   mockAssistantMessages,
   periodLogs as mockPeriodLogs,
@@ -18,7 +28,11 @@ type HealthData = {
   assistantMessages: AssistantMessage[];
   loading: boolean;
   error: string | null;
-  source: "firestore" | "mock";
+  source: "real" | "demo";
+  persistence: "firestore" | "localStorage";
+  createPeriod: (input: PeriodEntryInput) => Promise<void>;
+  updatePeriod: (id: string, input: PeriodEntryInput) => Promise<void>;
+  deletePeriod: (id: string) => Promise<void>;
 };
 
 const HealthDataContext = createContext<HealthData>({
@@ -27,7 +41,11 @@ const HealthDataContext = createContext<HealthData>({
   assistantMessages: mockAssistantMessages,
   loading: false,
   error: null,
-  source: "mock",
+  source: "demo",
+  persistence: "localStorage",
+  createPeriod: async () => undefined,
+  updatePeriod: async () => undefined,
+  deletePeriod: async () => undefined,
 });
 
 const moods = new Set<SymptomLog["mood"]>(["calm", "low", "anxious", "irritable", "positive"]);
@@ -36,37 +54,85 @@ const flows = new Set<FlowLevel>(["spotting", "light", "medium", "heavy"]);
 
 export function HealthDataProvider({ children }: { children: React.ReactNode }) {
   const cloud = useFirestoreLogs();
+  const [localPeriods, setLocalPeriods] = useState<PeriodLog[]>([]);
+  const [localReady, setLocalReady] = useState(false);
+
+  useEffect(() => {
+    if (cloud.configured) return;
+    const timer = window.setTimeout(() => {
+      setLocalPeriods(readLocalPeriodEntries(window.localStorage));
+      setLocalReady(true);
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, [cloud.configured]);
+
+  const createPeriod = useCallback(async (input: PeriodEntryInput) => {
+    validatePeriodEntry(input);
+    if (cloud.configured) {
+      await createPeriodLog({ ...input, notes: input.notes ?? "" });
+    } else {
+      const record = saveLocalPeriodEntry(window.localStorage, input);
+      setLocalPeriods((records) => [...records, record]);
+    }
+  }, [cloud.configured]);
+
+  const updatePeriod = useCallback(async (id: string, input: PeriodEntryInput) => {
+    validatePeriodEntry(input);
+    if (cloud.configured) {
+      await updatePeriodLog(id, { ...input, endDate: input.endDate, notes: input.notes ?? "" });
+    } else {
+      const record = updateLocalPeriodEntry(window.localStorage, id, input);
+      setLocalPeriods((records) => records.map((item) => item.id === id ? record : item));
+    }
+  }, [cloud.configured]);
+
+  const deletePeriod = useCallback(async (id: string) => {
+    if (cloud.configured) {
+      await deletePeriodLog(id);
+    } else {
+      deleteLocalPeriodEntry(window.localStorage, id);
+      setLocalPeriods((records) => records.filter((record) => record.id !== id));
+    }
+  }, [cloud.configured]);
+
   const value = useMemo<HealthData>(() => {
-    const useCloudData = cloud.configured;
+    const realPeriods = cloud.configured ? cloud.periodLogs.map((log) => ({
+      id: log.id,
+      startDate: log.startDate,
+      endDate: log.endDate || undefined,
+      flow: flows.has(log.flow as FlowLevel) ? log.flow as FlowLevel : "medium" as const,
+      painLevel: log.painLevel,
+      notes: log.notes,
+    })) : localPeriods;
+    const display = selectPeriodDisplayData(realPeriods, mockPeriodLogs);
+    const realSymptoms = cloud.configured ? cloud.symptomLogs.flatMap((log) => log.symptoms.map((symptom) => ({
+      id: `${log.id}-${symptom}`,
+      date: log.date,
+      symptom,
+      severity: log.severity,
+      mood: moods.has(log.mood as SymptomLog["mood"]) ? log.mood as SymptomLog["mood"] : "calm" as const,
+      energy: energies.has(log.energy as SymptomLog["energy"]) ? log.energy as SymptomLog["energy"] : "low" as const,
+      notes: log.notes,
+    }))) : [];
+    const realMessages = cloud.configured ? cloud.assistantMessages.map((message, index) => ({
+      id: index + 1,
+      role: message.role,
+      text: message.text,
+    })) : [];
 
     return {
-      periodLogs: useCloudData ? cloud.periodLogs.map((log) => ({
-        id: log.id,
-        startDate: log.startDate,
-        endDate: log.endDate || log.startDate,
-        flow: flows.has(log.flow as FlowLevel) ? log.flow as FlowLevel : "medium",
-        painLevel: log.painLevel,
-        notes: log.notes,
-      })) : mockPeriodLogs,
-      symptomLogs: useCloudData ? cloud.symptomLogs.flatMap((log) => log.symptoms.map((symptom) => ({
-        id: `${log.id}-${symptom}`,
-        date: log.date,
-        symptom,
-        severity: log.severity,
-        mood: moods.has(log.mood as SymptomLog["mood"]) ? log.mood as SymptomLog["mood"] : "calm",
-        energy: energies.has(log.energy as SymptomLog["energy"]) ? log.energy as SymptomLog["energy"] : "low",
-        notes: log.notes,
-      }))) : mockSymptomLogs,
-      assistantMessages: useCloudData ? cloud.assistantMessages.map((message, index) => ({
-        id: index + 1,
-        role: message.role,
-        text: message.text,
-      })) : mockAssistantMessages,
-      loading: cloud.loading,
+      periodLogs: display.records,
+      symptomLogs: display.mode === "real" ? realSymptoms : mockSymptomLogs,
+      assistantMessages: display.mode === "real" ? realMessages : mockAssistantMessages,
+      loading: cloud.configured ? cloud.loading : !localReady,
       error: cloud.error,
-      source: cloud.configured ? "firestore" : "mock",
+      source: display.mode,
+      persistence: cloud.configured ? "firestore" : "localStorage",
+      createPeriod,
+      updatePeriod,
+      deletePeriod,
     };
-  }, [cloud]);
+  }, [cloud, createPeriod, deletePeriod, localPeriods, localReady, updatePeriod]);
 
   return <HealthDataContext value={value}>{children}</HealthDataContext>;
 }

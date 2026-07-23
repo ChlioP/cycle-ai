@@ -12,10 +12,10 @@ import { Skeleton } from "@/components/ui/Skeleton";
 import { EmptyState } from "@/components/ui/EmptyState";
 
 export function AssistantChatBox() {
-  const { assistantMessages, periodLogs, symptomLogs, source, loading, error } = useHealthData();
+  const { assistantMessages, periodLogs, symptomLogs, source, persistence, loading, error } = useHealthData();
   const [input, setInput] = useState("");
   const [pendingMessages, setPendingMessages] = useState<AssistantMessage[]>([]);
-  const storedMessages = assistantMessages.length > 0 ? assistantMessages : source === "mock" ? mockAssistantMessages : [];
+  const storedMessages = assistantMessages.length > 0 ? assistantMessages : source === "demo" ? mockAssistantMessages : [];
   const messages = [...storedMessages, ...pendingMessages.filter((pending) =>
     !storedMessages.some((stored) => stored.role === pending.role && stored.text === pending.text),
   )];
@@ -28,10 +28,10 @@ export function AssistantChatBox() {
     const reply = generateAssistantReply(text, periodLogs, symptomLogs);
     setPendingMessages((current) => [...current, { id, role: "user", text }, { id: id + 1, role: "ai", text: "Thinking…" }]);
     setInput("");
-    if (source === "firestore") await createAssistantMessage({ role: "user", text }).catch(() => undefined);
+    if (source === "real" && persistence === "firestore") await createAssistantMessage({ role: "user", text }).catch(() => undefined);
     window.setTimeout(() => {
       setPendingMessages((current) => current.map((message) => message.id === id + 1 ? { ...message, text: reply } : message));
-      if (source === "firestore") void createAssistantMessage({ role: "ai", text: reply }).catch(() => undefined);
+      if (source === "real" && persistence === "firestore") void createAssistantMessage({ role: "ai", text: reply }).catch(() => undefined);
     }, 650);
   };
 

@@ -21,7 +21,7 @@ const month = (date: string) => new Intl.DateTimeFormat("en-US", { month: "short
 
 export function Insights() {
   const { periodLogs, symptomLogs, source, loading, error } = useHealthData();
-  const analytics = calculateHealthAnalytics(periodLogs, symptomLogs, source === "mock" ? fallbackCycleLengths.map((cycle) => cycle.days) : []);
+  const analytics = calculateHealthAnalytics(periodLogs, symptomLogs, source === "demo" ? fallbackCycleLengths.map((cycle) => cycle.days) : []);
   const lengths = analytics.cycleLengths;
   const cycles = lengths.map((days, index) => [periodLogs[index + 1] ? month(periodLogs[index + 1].startDate) : `C${index + 1}`, Math.round((days / 38) * 100), `${days}d`] as const);
   const durations = periodLogs.map((log) => daysBetween(log.startDate, log.endDate || log.startDate) + 1);

@@ -15,8 +15,8 @@ export function useLogSubmit(label: string, persist: (form: HTMLFormElement) => 
       await persist(event.currentTarget);
       setMessage(`${label} saved privately`);
       setError(false);
-    } catch {
-      setMessage(`Unable to save ${label.toLowerCase()}. Please try again.`);
+    } catch (caught) {
+      setMessage(caught instanceof Error ? caught.message : `Unable to save ${label.toLowerCase()}. Please try again.`);
       setError(true);
     } finally {
       setSaving(false);

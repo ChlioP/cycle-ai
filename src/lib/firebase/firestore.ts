@@ -1,22 +1,25 @@
 import {
   addDoc,
   collection,
+  deleteField,
   deleteDoc,
   doc,
   onSnapshot,
   orderBy,
   query,
   serverTimestamp,
+  setDoc,
   updateDoc,
   type DocumentData,
   type Unsubscribe,
 } from "firebase/firestore";
 import { ensureAuthenticatedUser } from "./auth";
 import { getFirebaseServices } from "./client";
+import { createPeriodId } from "../periodRepository";
 
 export type PeriodLogInput = {
   startDate: string;
-  endDate: string;
+  endDate?: string;
   flow: string;
   painLevel: number;
   notes: string;
@@ -87,12 +90,19 @@ function subscribe<T>(userId: string, name: CollectionName, onData: (records: T[
 
 export async function createPeriodLog(input: PeriodLogInput) {
   const { reference, user } = await authenticatedCollection("periodLogs");
-  const result = await addDoc(reference, { ...input, userId: user.uid, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
-  return result.id;
+  const id = createPeriodId();
+  const { endDate, ...required } = input;
+  const payload = { ...required, ...(endDate ? { endDate } : {}), userId: user.uid, createdAt: serverTimestamp(), updatedAt: serverTimestamp() };
+  await setDoc(doc(reference, id), payload);
+  return id;
 }
 
 export async function updatePeriodLog(id: string, updates: Partial<PeriodLogInput>) {
-  await updateDoc(await authenticatedDocument("periodLogs", id), { ...updates, updatedAt: serverTimestamp() });
+  await updateDoc(await authenticatedDocument("periodLogs", id), {
+    ...updates,
+    ...(Object.hasOwn(updates, "endDate") ? { endDate: updates.endDate || deleteField() } : {}),
+    updatedAt: serverTimestamp(),
+  });
 }
 
 export async function deletePeriodLog(id: string) {
